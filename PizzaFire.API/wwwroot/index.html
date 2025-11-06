@@ -1,0 +1,189 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fire Pizza - Доставка пиццы</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Добавляем стили для вкладок авторизации */
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            background: none;
+            border: none;
+            color: var(--text-gray);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+            .auth-tab.active {
+                color: var(--primary);
+                border-bottom-color: var(--primary);
+            }
+
+        .auth-tab-content {
+            display: none;
+        }
+
+            .auth-tab-content.active {
+                display: block;
+            }
+
+        .full-width {
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        /* Стиль для логотипа как кнопки */
+        .logo {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+            .logo:hover {
+                transform: scale(1.05);
+            }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo" onclick="goToHome()">
+            <i class="fas fa-fire"></i>Fire Pizza
+        </div>
+        <nav class="nav">
+            <button id="nav-home" class="nav-btn active">
+                <i class="fas fa-home"></i> Главная
+            </button>
+            <button id="nav-cart" class="nav-btn">
+                <i class="fas fa-shopping-cart"></i> Корзина
+                <span id="cart-count" class="cart-count">0</span>
+            </button>
+            <button id="nav-history" class="nav-btn" style="display: none;">
+                <i class="fas fa-history"></i> История
+            </button>
+            <button id="nav-auth" class="nav-btn">
+                <i class="fas fa-user"></i> Вход
+            </button>
+        </nav>
+    </header>
+
+    <main class="main">
+        <section id="home-section" class="section active">
+            <div class="hero">
+                <h1>Создайте свою идеальную пиццу</h1>
+                <p>Соберите пиццу мечты из свежих ингредиентов или выберите готовые варианты</p>
+            </div>
+
+            <div class="custom-pizza-section">
+                <h2><i class="fas fa-magic"></i> Создайте уникальную пиццу</h2>
+                <p>Выберите размер и ингредиенты по вашему вкусу</p>
+                <button id="custom-pizza-btn" class="custom-pizza-btn">
+                    <i class="fas fa-plus-circle"></i> Кастомизированная пицца
+                </button>
+            </div>
+
+            <div class="catalog">
+                <h2><i class="fas fa-pizza-slice"></i> Готовые пиццы</h2>
+                <div id="catalog-items" class="catalog-grid"></div>
+            </div>
+        </section>
+
+        <section id="cart-section" class="section">
+            <h2><i class="fas fa-shopping-cart"></i> Ваша корзина</h2>
+            <ul id="cart-items" class="cart-list"></ul>
+            <div id="total-price" class="total-price">Общая цена: 0 руб</div>
+            <button id="order-btn" class="btn-primary large">
+                <i class="fas fa-check"></i> Оформить заказ
+            </button>
+        </section>
+
+        <section id="auth-section" class="section">
+            <!-- ОБНОВЛЕННАЯ ФОРМА АВТОРИЗАЦИИ С ВКЛАДКАМИ -->
+            <div class="auth-form">
+                <h2><i class="fas fa-sign-in-alt"></i> Вход / Регистрация</h2>
+
+                <div class="auth-tabs">
+                    <button class="auth-tab active" onclick="switchAuthTab('login')">Вход</button>
+                    <button class="auth-tab" onclick="switchAuthTab('register')">Регистрация</button>
+                </div>
+
+                <div id="login-form" class="auth-tab-content active">
+                    <input type="text" id="login-username" placeholder="Логин *" class="input-field">
+                    <input type="password" id="login-password" placeholder="Пароль *" class="input-field">
+                    <button id="login-btn" class="btn-primary full-width">
+                        <i class="fas fa-sign-in-alt"></i> Войти
+                    </button>
+                </div>
+
+                <div id="register-form" class="auth-tab-content">
+                    <input type="text" id="reg-username" placeholder="Логин *" class="input-field">
+                    <input type="password" id="reg-password" placeholder="Пароль *" class="input-field">
+                    <input type="email" id="reg-email" placeholder="Email" class="input-field"> 
+                    <input type="text" id="reg-first-name" placeholder="Имя" class="input-field">
+                    <input type="text" id="reg-last-name" placeholder="Фамилия" class="input-field">
+                    <button id="register-btn" class="btn-secondary full-width">
+                        <i class="fas fa-user-plus"></i> Зарегистрироваться
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Модальное окно для создания/редактирования пиццы -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modal-title">Создать пиццу</h2>
+            <div id="modal-ingredients" class="modal-container"></div>
+            <div id="modal-price" class="modal-price">Цена: 0 руб</div>
+            <button id="save-edit" class="btn-primary large">
+                <i class="fas fa-save"></i> Сохранить в корзину
+            </button>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2025 Fire Pizza. Все права защищены.</p>
+        <p>Доставка горячей пиццы 24/7</p>
+    </footer>
+
+    <script src="api.js"></script>
+    <script src="app.js"></script>
+    <script>
+        // Функция для перехода на главную страницу
+        function goToHome() {
+            // Скрываем все секции
+            document.querySelectorAll('.section').forEach(sec => {
+                sec.classList.remove('active');
+            });
+
+            // Показываем главную секцию
+            document.getElementById('home-section').classList.add('active');
+
+            // Обновляем навигацию
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById('nav-home').classList.add('active');
+
+            // Закрываем все модальные окна
+            closeModal();
+            closeAuthModal();
+
+            console.log('Переход на главную страницу');
+        }
+
+        // Добавляем функцию в глобальную область видимости
+        window.goToHome = goToHome;
+    </script>
+</body>
+</html>
