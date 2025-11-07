@@ -1464,3 +1464,324 @@ body {
     width: 100%;
     margin-top: 1rem;
 }
+/* Стили для формы оплаты */
+.payment-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 4000;
+    padding: 1rem;
+    backdrop-filter: blur(5px);
+}
+
+.payment-container {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-hover);
+    border: 2px solid var(--primary);
+}
+
+.payment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid rgba(220, 38, 38, 0.3);
+}
+
+.close-payment {
+    background: var(--light);
+    border: none;
+    color: var(--text-gray);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 1.2rem;
+}
+
+    .close-payment:hover {
+        background: var(--primary);
+        color: white;
+        transform: rotate(90deg);
+    }
+
+.order-summary {
+    background: rgba(220, 38, 38, 0.1);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 1.5rem;
+    border: 1px solid rgba(220, 38, 38, 0.2);
+}
+
+.order-items-preview {
+    margin: 1rem 0;
+}
+
+.order-pizza-preview {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-light);
+}
+
+.order-total-payment {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--primary-light);
+    text-align: center;
+    padding-top: 1rem;
+    border-top: 2px solid rgba(220, 38, 38, 0.3);
+}
+
+.delivery-form-section,
+.payment-section {
+    margin-bottom: 2rem;
+}
+
+    .delivery-form-section h3,
+    .payment-section h3 {
+        color: var(--text-light);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+/* Методы оплаты */
+.payment-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.payment-method {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background: var(--light);
+    border: 2px solid transparent;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+    .payment-method:hover {
+        border-color: var(--primary-light);
+        transform: translateY(-2px);
+    }
+
+    .payment-method.selected {
+        border-color: var(--primary);
+        background: rgba(220, 38, 38, 0.1);
+    }
+
+.method-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+}
+
+    .method-icon i {
+        color: white;
+        font-size: 1.2rem;
+    }
+
+.method-info {
+    flex: 1;
+}
+
+.method-name {
+    font-weight: 600;
+    color: var(--text-light);
+    margin-bottom: 0.2rem;
+}
+
+.method-description {
+    font-size: 0.9rem;
+    color: var(--text-gray);
+}
+
+.method-radio input[type="radio"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--primary);
+}
+
+/* Форма карты */
+.card-form {
+    background: rgba(220, 38, 38, 0.05);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(220, 38, 38, 0.2);
+}
+
+.card-security {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--success);
+    font-size: 0.9rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Информация о наличных */
+.cash-info {
+    background: rgba(22, 163, 74, 0.05);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(22, 163, 74, 0.2);
+}
+
+.cash-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    color: var(--text-light);
+}
+
+    .cash-notice i {
+        color: var(--success);
+        font-size: 1.2rem;
+        margin-top: 0.2rem;
+    }
+
+    .cash-notice p {
+        margin: 0;
+        line-height: 1.5;
+    }
+
+.payment-buttons {
+    display: flex;
+    gap: 1rem;
+    margin: 2rem 0 1rem 0;
+}
+
+.payment-security {
+    text-align: center;
+    color: var(--text-gray);
+    font-size: 0.9rem;
+}
+
+    .payment-security i {
+        color: var(--success);
+    }
+
+/* Стили для успешной оплаты */
+.payment-success-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 5000;
+    padding: 1rem;
+}
+
+.payment-success {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 3rem 2rem;
+    text-align: center;
+    max-width: 500px;
+    width: 100%;
+    box-shadow: var(--shadow-hover);
+    border: 2px solid var(--success);
+}
+
+.success-icon {
+    font-size: 4rem;
+    color: var(--success);
+    margin-bottom: 1rem;
+}
+
+    .success-icon i {
+        animation: bounce 0.6s ease;
+    }
+
+.success-info {
+    text-align: left;
+    background: rgba(22, 163, 74, 0.1);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    margin: 1.5rem 0;
+}
+
+    .success-info p {
+        margin: 0.5rem 0;
+    }
+
+.cash-note {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.8rem;
+    border-radius: 8px;
+    margin-top: 1rem !important;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+    .cash-note i {
+        color: var(--warning);
+    }
+
+/* Адаптивность для формы оплаты */
+@media (max-width: 768px) {
+    .payment-container {
+        padding: 1.5rem;
+        margin: 1rem;
+    }
+
+    .payment-buttons {
+        flex-direction: column;
+    }
+
+    .payment-header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+
+    .close-payment {
+        align-self: flex-end;
+        margin-top: -3rem;
+    }
+
+    .payment-method {
+        padding: 0.8rem;
+    }
+
+    .method-icon {
+        width: 35px;
+        height: 35px;
+        margin-right: 0.8rem;
+    }
+}

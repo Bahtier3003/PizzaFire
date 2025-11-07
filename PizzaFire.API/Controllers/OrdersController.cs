@@ -24,7 +24,6 @@ namespace PizzaFire_API.Controllers
         {
             try
             {
-                // Получаем ID текущего пользователя из JWT токена
                 var userId = GetCurrentUserId();
                 if (userId == null)
                 {
@@ -36,46 +35,55 @@ namespace PizzaFire_API.Controllers
                     return BadRequest(new { message = "Корзина пуста" });
                 }
 
+                // Создаем основной заказ
                 var order = new Order
                 {
                     UserId = userId.Value,
                     OrderDate = DateTime.UtcNow,
                     TotalPrice = 0,
-                    Status = "confirmed"
+                    Status = "pending_payment",
+                    PaymentStatus = "pending"
                 };
 
-                // Расчет стоимости заказа
+                // Добавляем заказ в контекст, чтобы получить ID
+                _context.Orders.Add(order);
+                await _context.SaveChangesAsync();
+
+                decimal totalPrice = 0;
+
+                // Расчет стоимости заказа и создание OrderItems
                 foreach (var itemDto in orderDto.Items)
                 {
-                    decimal basePrice = itemDto.PizzaId == 0 ? 300 : 500; // Базовая цена
+                    decimal basePrice = itemDto.PizzaId == 0 ? 300 : 500;
                     var sizeMultiplier = GetSizeMultiplier(itemDto.Size);
                     var pizzaPrice = basePrice * sizeMultiplier;
-
-                    // Расчет цены дополнительных ингредиентов
                     var additionalPrice = (itemDto.AdditionalIngredientIds?.Count ?? 0) * 50;
                     var itemPrice = pizzaPrice + additionalPrice;
 
                     var orderItem = new OrderItem
                     {
+                        OrderId = order.Id,
                         PizzaId = itemDto.PizzaId == 0 ? 1 : itemDto.PizzaId,
                         Size = itemDto.Size,
                         ItemPrice = itemPrice,
-                        AdditionalIngredientIds = JsonSerializer.Serialize(itemDto.AdditionalIngredientIds ?? new List<int>()),
-                        RemovedIngredientIds = JsonSerializer.Serialize(itemDto.RemovedIngredientIds ?? new List<int>())
+                        // Исправляем названия свойств
+                        AdditionalIngredientsJson = JsonSerializer.Serialize(itemDto.AdditionalIngredientIds ?? new List<int>()),
+                        RemovedIngredientsJson = JsonSerializer.Serialize(itemDto.RemovedIngredientIds ?? new List<int>())
                     };
 
-                    order.OrderItems.Add(orderItem);
-                    order.TotalPrice += itemPrice;
+                    _context.OrderItems.Add(orderItem);
+                    totalPrice += itemPrice;
                 }
 
-                // Расчет времени доставки (50-70 минут)
+                // Расчет времени доставки
                 var random = new Random();
-                var deliveryMinutes = random.Next(50, 71); // от 50 до 70 минут
+                var deliveryMinutes = random.Next(50, 71);
                 var estimatedDelivery = DateTime.Now.AddMinutes(deliveryMinutes);
 
-                // Создание деталей заказа
+                // Создаем детали заказа
                 var orderDetails = new OrderDetails
                 {
+                    OrderId = order.Id,
                     Address = orderDto.Details?.Address ?? "Адрес не указан",
                     Phone = orderDto.Details?.Phone ?? "Телефон не указан",
                     Email = orderDto.Details?.Email ?? "Email не указан",
@@ -84,9 +92,10 @@ namespace PizzaFire_API.Controllers
                     EstimatedDelivery = estimatedDelivery
                 };
 
-                order.OrderDetails = orderDetails;
-
-                _context.Orders.Add(order);
+                // Обновляем общую стоимость заказа
+                order.TotalPrice = totalPrice;
+                _context.OrderDetails.Add(orderDetails);
+                _context.Orders.Update(order);
                 await _context.SaveChangesAsync();
 
                 var response = new OrderResponseDto
@@ -101,6 +110,8 @@ namespace PizzaFire_API.Controllers
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Ошибка при создании заказа: {ex.Message}");
+                Console.WriteLine($"Inner exception: {ex.InnerException?.Message}");
                 return BadRequest(new { message = $"Ошибка при создании заказа: {ex.Message}" });
             }
         }

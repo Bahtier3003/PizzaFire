@@ -12,7 +12,7 @@ using PizzaFire_API.Data;
 namespace PizzaFire.API.Migrations
 {
     [DbContext(typeof(PizzaDbContext))]
-    [Migration("20251105003056_InitialCreate")]
+    [Migration("20251107132638_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -57,9 +57,19 @@ namespace PizzaFire.API.Migrations
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Status")
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PaymentMethod")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PaymentStatus")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<decimal>("TotalPrice")
                         .HasPrecision(18, 2)
@@ -69,6 +79,10 @@ namespace PizzaFire.API.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("OrderDate");
+
+                    b.HasIndex("Status");
 
                     b.HasIndex("UserId");
 
@@ -123,7 +137,7 @@ namespace PizzaFire.API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("AdditionalIngredientIds")
+                    b.Property<string>("AdditionalIngredientsJson")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -137,7 +151,7 @@ namespace PizzaFire.API.Migrations
                     b.Property<int>("PizzaId")
                         .HasColumnType("int");
 
-                    b.Property<string>("RemovedIngredientIds")
+                    b.Property<string>("RemovedIngredientsJson")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -201,7 +215,7 @@ namespace PizzaFire.API.Migrations
                     b.ToTable("PizzaIngredients");
                 });
 
-            modelBuilder.Entity("User", b =>
+            modelBuilder.Entity("PizzaFire_API.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -214,7 +228,7 @@ namespace PizzaFire.API.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
@@ -230,19 +244,24 @@ namespace PizzaFire.API.Migrations
 
                     b.Property<string>("Username")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Email");
+
+                    b.HasIndex("Username")
+                        .IsUnique();
 
                     b.ToTable("Users");
                 });
 
             modelBuilder.Entity("PizzaFire_API.Models.Order", b =>
                 {
-                    b.HasOne("User", "User")
+                    b.HasOne("PizzaFire_API.Models.User", "User")
                         .WithMany("Orders")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -270,7 +289,7 @@ namespace PizzaFire.API.Migrations
                     b.HasOne("PizzaFire_API.Models.Pizza", "Pizza")
                         .WithMany()
                         .HasForeignKey("PizzaId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Order");
@@ -314,7 +333,7 @@ namespace PizzaFire.API.Migrations
                     b.Navigation("PizzaIngredients");
                 });
 
-            modelBuilder.Entity("User", b =>
+            modelBuilder.Entity("PizzaFire_API.Models.User", b =>
                 {
                     b.Navigation("Orders");
                 });

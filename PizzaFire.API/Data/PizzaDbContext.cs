@@ -17,10 +17,46 @@ namespace PizzaFire_API.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // Настройка связи многие-ко-многим для пицц и ингредиентов
             modelBuilder.Entity<PizzaIngredient>()
                 .HasKey(pi => new { pi.PizzaId, pi.IngredientId });
 
-            // Добавляем точность для decimal полей
+            modelBuilder.Entity<PizzaIngredient>()
+                .HasOne(pi => pi.Pizza)
+                .WithMany(p => p.PizzaIngredients)
+                .HasForeignKey(pi => pi.PizzaId);
+
+            modelBuilder.Entity<PizzaIngredient>()
+                .HasOne(pi => pi.Ingredient)
+                .WithMany(i => i.PizzaIngredients)
+                .HasForeignKey(pi => pi.IngredientId);
+
+            // Настройка связей для заказов
+            modelBuilder.Entity<Order>()
+                .HasOne(o => o.User)
+                .WithMany(u => u.Orders)
+                .HasForeignKey(o => o.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<OrderItem>()
+                .HasOne(oi => oi.Order)
+                .WithMany(o => o.OrderItems)
+                .HasForeignKey(oi => oi.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<OrderItem>()
+                .HasOne(oi => oi.Pizza)
+                .WithMany()
+                .HasForeignKey(oi => oi.PizzaId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<OrderDetails>()
+                .HasOne(od => od.Order)
+                .WithOne(o => o.OrderDetails)
+                .HasForeignKey<OrderDetails>(od => od.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Настройка точности для decimal полей
             modelBuilder.Entity<Ingredient>()
                 .Property(i => i.Price)
                 .HasPrecision(18, 2);
@@ -36,6 +72,23 @@ namespace PizzaFire_API.Data
             modelBuilder.Entity<Pizza>()
                 .Property(p => p.BasePrice)
                 .HasPrecision(18, 2);
+
+            // Настройка индексов для производительности
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Username)
+                .IsUnique();
+
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Email);
+
+            modelBuilder.Entity<Order>()
+                .HasIndex(o => o.UserId);
+
+            modelBuilder.Entity<Order>()
+                .HasIndex(o => o.Status);
+
+            modelBuilder.Entity<Order>()
+                .HasIndex(o => o.OrderDate);
         }
     }
 }

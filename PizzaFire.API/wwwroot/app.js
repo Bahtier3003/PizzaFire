@@ -1265,6 +1265,455 @@ function getAlertColor(type) {
     };
     return colors[type] || 'var(--primary)';
 }
+// Функция оформления заказа с оплатой
+async function placeOrderWithPayment() {
+    if (cart.length === 0) {
+        showAlert('Корзина пуста. Добавьте пиццы перед оформлением заказа.', 'warning');
+        return;
+    }
+
+    if (!window.pizzaApi?.token) {
+        showAlert('Для оформления заказа необходимо войти в систему', 'warning');
+        document.getElementById('nav-auth').click();
+        return;
+    }
+
+    try {
+        // Сначала показываем форму с данными доставки
+        showPaymentForm();
+
+    } catch (error) {
+        console.error('Order creation error:', error);
+        showAlert('Ошибка при создании заказа: ' + error.message, 'error');
+    }
+}
+
+
+// Показать форму оплаты
+async function showPaymentForm() {
+    const total = cart.reduce((sum, pizza) => sum + pizza.totalPrice, 0);
+
+    // Получаем доступные методы оплаты
+    let paymentMethods = [];
+    try {
+        paymentMethods = await window.pizzaApi.getPaymentMethods();
+    } catch (error) {
+        console.error('Error getting payment methods:', error);
+        paymentMethods = [
+            { method: 'card', description: 'Банковская карта', icon: 'fa-credit-card' },
+            { method: 'cash', description: 'Наличными курьеру', icon: 'fa-money-bill-wave' }
+        ];
+    }
+
+    const paymentHTML = `
+        <div class="payment-overlay">
+            <div class="payment-container">
+                <div class="payment-header">
+                    <h2><i class="fas fa-credit-card"></i> Оформление заказа</h2>
+                    <button class="close-payment" onclick="closePaymentForm()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="order-summary">
+                    <h3>Ваш заказ</h3>
+                    <div class="order-items-preview">
+                        ${cart.map(pizza => `
+                            <div class="order-pizza-preview">
+                                <strong>${pizza.name}</strong> - ${pizza.totalPrice} руб
+                                ${pizza.customIngredients && pizza.customIngredients.length > 0 ?
+            `<br><small>Доп. ингредиенты: ${pizza.customIngredients.map(ing => ing.name).join(', ')}</small>` :
+            ''
+        }
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="order-total-payment">Итого: ${total} руб</div>
+                </div>
+
+                <div class="delivery-form-section">
+                    <h3><i class="fas fa-truck"></i> Данные для доставки</h3>
+                    <form id="delivery-form-payment">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="first-name-payment"><i class="fas fa-user"></i> Имя *</label>
+                                <input type="text" id="first-name-payment" required placeholder="Ваше имя">
+                            </div>
+                            <div class="form-group">
+                                <label for="last-name-payment"><i class="fas fa-user"></i> Фамилия</label>
+                                <input type="text" id="last-name-payment" placeholder="Ваша фамилия">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="email-payment"><i class="fas fa-envelope"></i> Email *</label>
+                            <input type="email" id="email-payment" required placeholder="your@email.com">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="phone-payment"><i class="fas fa-phone"></i> Телефон *</label>
+                            <input type="tel" id="phone-payment" required placeholder="+7 (XXX) XXX-XX-XX">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="address-payment"><i class="fas fa-map-marker-alt"></i> Адрес доставки *</label>
+                            <textarea id="address-payment" required placeholder="Улица, дом, квартира, этаж, подъезд" rows="2"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="door-code-payment"><i class="fas fa-key"></i> Код домофона</label>
+                            <input type="text" id="door-code-payment" placeholder="Код домофона или номер квартиры">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="instructions-payment"><i class="fas fa-sticky-note"></i> Комментарий курьеру</label>
+                            <textarea id="instructions-payment" placeholder="Например: позвонить за 10 минут, не звонить в домофон и т.д." rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="payment-section">
+                    <h3><i class="fas fa-credit-card"></i> Способ оплаты</h3>
+                    <div class="payment-methods">
+                        ${paymentMethods.map(method => `
+                            <div class="payment-method" data-method="${method.method}">
+                                <div class="method-icon">
+                                    <i class="fas ${method.icon}"></i>
+                                </div>
+                                <div class="method-info">
+                                    <div class="method-name">${method.description}</div>
+                                    ${method.method === 'card' ?
+                '<div class="method-description">Онлайн оплата картой</div>' :
+                '<div class="method-description">Оплата при получении</div>'
+            }
+                                </div>
+                                <div class="method-radio">
+                                    <input type="radio" name="payment-method" value="${method.method}" 
+                                           ${method.method === 'card' ? 'checked' : ''}>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div id="card-payment-form" class="card-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="card-number">Номер карты *</label>
+                                <input type="text" id="card-number" placeholder="0000 0000 0000 0000" maxlength="19">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="card-expiry">Срок действия *</label>
+                                <input type="text" id="card-expiry" placeholder="ММ/ГГ" maxlength="5">
+                            </div>
+                            <div class="form-group">
+                                <label for="card-cvv">CVV *</label>
+                                <input type="text" id="card-cvv" placeholder="000" maxlength="3">
+                            </div>
+                        </div>
+                        <div class="card-security">
+                            <i class="fas fa-lock"></i> Данные карты защищены
+                        </div>
+                    </div>
+
+                    <div id="cash-payment-info" class="cash-info" style="display: none;">
+                        <div class="cash-notice">
+                            <i class="fas fa-info-circle"></i>
+                            <div>
+                                <p><strong>Оплата наличными при получении</strong></p>
+                                <p>Курьер будет иметь при себе сдачу. Подготовьте точную сумму для удобства расчета.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="payment-buttons">
+                    <button type="button" class="btn-secondary" onclick="closePaymentForm()">
+                        <i class="fas fa-times"></i> Отмена
+                    </button>
+                    <button id="submit-payment" class="btn-primary">
+                        <i class="fas fa-lock"></i> Оплатить ${total} руб
+                    </button>
+                </div>
+
+                <div class="payment-security">
+                    <p><i class="fas fa-shield-alt"></i> Безопасное соединение</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const paymentContainer = document.createElement('div');
+    paymentContainer.innerHTML = paymentHTML;
+    document.body.appendChild(paymentContainer);
+
+    initializePaymentForm(total);
+}
+
+
+// Инициализация формы оплаты
+function initializePaymentForm(total) {
+    // Обработчик смены метода оплаты
+    document.querySelectorAll('input[name="payment-method"]').forEach(radio => {
+        radio.addEventListener('change', function () {
+            const method = this.value;
+            const cardForm = document.getElementById('card-payment-form');
+            const cashInfo = document.getElementById('cash-payment-info');
+            const submitBtn = document.getElementById('submit-payment');
+
+            if (cardForm) cardForm.style.display = method === 'card' ? 'block' : 'none';
+            if (cashInfo) cashInfo.style.display = method === 'cash' ? 'block' : 'none';
+
+            if (method === 'cash') {
+                submitBtn.innerHTML = `<i class="fas fa-check"></i> Подтвердить заказ (${total} руб)`;
+            } else {
+                submitBtn.innerHTML = `<i class="fas fa-lock"></i> Оплатить ${total} руб`;
+            }
+
+            // Добавляем/убираем класс selected для визуального выделения
+            document.querySelectorAll('.payment-method').forEach(methodEl => {
+                methodEl.classList.remove('selected');
+            });
+            this.closest('.payment-method').classList.add('selected');
+        });
+    });
+
+    // Инициализируем выделение выбранного метода
+    const selectedMethod = document.querySelector('input[name="payment-method"]:checked');
+    if (selectedMethod) {
+        selectedMethod.closest('.payment-method').classList.add('selected');
+    }
+
+    // Маска для номера карты
+    const cardNumberInput = document.getElementById('card-number');
+    if (cardNumberInput) {
+        cardNumberInput.addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+            let formattedValue = '';
+            for (let i = 0; i < value.length; i++) {
+                if (i > 0 && i % 4 === 0) formattedValue += ' ';
+                formattedValue += value[i];
+            }
+            e.target.value = formattedValue.substring(0, 19);
+        });
+    }
+
+    // Маска для срока действия
+    const expiryInput = document.getElementById('card-expiry');
+    if (expiryInput) {
+        expiryInput.addEventListener('input', function (e) {
+            let value = e.target.value.replace(/[^0-9]/g, '');
+            if (value.length >= 2) {
+                value = value.substring(0, 2) + '/' + value.substring(2, 4);
+            }
+            e.target.value = value.substring(0, 5);
+        });
+    }
+
+    // Маска для CVV
+    const cvvInput = document.getElementById('card-cvv');
+    if (cvvInput) {
+        cvvInput.addEventListener('input', function (e) {
+            e.target.value = e.target.value.replace(/[^0-9]/g, '').substring(0, 3);
+        });
+    }
+
+    // Обработчик отправки формы
+    document.getElementById('submit-payment').addEventListener('click', async (e) => {
+        e.preventDefault();
+        await handlePaymentSubmit(total);
+    });
+
+    // Добавляем обработчики клика на весь блок метода оплаты
+    document.querySelectorAll('.payment-method').forEach(methodEl => {
+        methodEl.addEventListener('click', function () {
+            const radio = this.querySelector('input[type="radio"]');
+            if (radio) {
+                radio.checked = true;
+                radio.dispatchEvent(new Event('change'));
+            }
+        });
+    });
+}
+
+// Обработчик оплаты
+async function handlePaymentSubmit(total) {
+    const submitButton = document.getElementById('submit-payment');
+    const originalText = submitButton.innerHTML;
+
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обработка...';
+    submitButton.disabled = true;
+
+    try {
+        // Проверяем данные доставки
+        const formData = {
+            firstName: document.getElementById('first-name-payment').value.trim(),
+            lastName: document.getElementById('last-name-payment').value.trim(),
+            email: document.getElementById('email-payment').value.trim(),
+            phone: document.getElementById('phone-payment').value.trim(),
+            address: document.getElementById('address-payment').value.trim(),
+            doorCode: document.getElementById('door-code-payment').value.trim(),
+            instructions: document.getElementById('instructions-payment').value.trim()
+        };
+
+        // Валидация обязательных полей
+        if (!formData.firstName || !formData.email || !formData.phone || !formData.address) {
+            throw new Error('Заполните все обязательные поля доставки');
+        }
+
+        // Валидация email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(formData.email)) {
+            throw new Error('Введите корректный email адрес');
+        }
+
+        // Валидация телефона
+        const phoneRegex = /^(\+7|8)[\d\s\-\(\)]{10,}$/;
+        const cleanPhone = formData.phone.replace(/\s/g, '');
+        if (!phoneRegex.test(cleanPhone)) {
+            throw new Error('Введите корректный номер телефона');
+        }
+
+        // Создаем данные заказа
+        const orderData = {
+            items: cart.map(pizza => ({
+                pizzaId: pizza.originalPizzaId || (pizza.name.includes('Кастомная') ? 0 : 1),
+                size: pizza.size || 'medium',
+                additionalIngredientIds: pizza.customIngredients ?
+                    pizza.customIngredients.map(ing => ing.id).filter(id => id) : [],
+                removedIngredientIds: []
+            })),
+            details: {
+                address: formData.address,
+                phone: formData.phone,
+                email: formData.email,
+                doorCode: formData.doorCode,
+                courierInstructions: formData.instructions
+            }
+        };
+
+        console.log('Sending order data:', orderData);
+
+        // Создаем заказ
+        const orderResult = await window.pizzaApi.createOrder(orderData);
+        console.log('Order created:', orderResult);
+
+        // Затем обрабатываем оплату
+        const selectedMethod = document.querySelector('input[name="payment-method"]:checked').value;
+        const paymentData = {
+            orderId: orderResult.orderId,
+            paymentMethod: selectedMethod
+        };
+
+        // Если оплата картой, добавляем данные карты
+        if (selectedMethod === 'card') {
+            paymentData.cardNumber = document.getElementById('card-number').value.replace(/\s/g, '');
+            paymentData.expiryDate = document.getElementById('card-expiry').value;
+            paymentData.cvv = document.getElementById('card-cvv').value;
+
+            if (!paymentData.cardNumber || !paymentData.expiryDate || !paymentData.cvv) {
+                throw new Error('Заполните все данные карты');
+            }
+
+            if (paymentData.cardNumber.length !== 16) {
+                throw new Error('Неверный номер карты. Должно быть 16 цифр');
+            }
+
+            // Простая валидация срока действия
+            const [month, year] = paymentData.expiryDate.split('/');
+            if (!month || !year || month.length !== 2 || year.length !== 2) {
+                throw new Error('Неверный формат срока действия карты');
+            }
+
+            if (paymentData.cvv.length !== 3) {
+                throw new Error('Неверный CVV код');
+            }
+        }
+
+        console.log('Sending payment data:', paymentData);
+
+        // Обрабатываем платеж
+        const paymentResult = await window.pizzaApi.processPayment(paymentData);
+        console.log('Payment result:', paymentResult);
+
+        if (paymentResult.success) {
+            showPaymentSuccess(orderResult.orderId, selectedMethod, total);
+
+            // Очищаем корзину
+            cart = [];
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartDisplay();
+            updateCartCount();
+        } else {
+            throw new Error(paymentResult.message);
+        }
+
+    } catch (error) {
+        console.error('Payment error:', error);
+        showAlert('Ошибка: ' + error.message, 'error');
+
+        // Восстанавливаем кнопку
+        submitButton.innerHTML = originalText;
+        submitButton.disabled = false;
+    }
+}
+
+// Показать успешное подтверждение оплаты
+function showPaymentSuccess(orderId, paymentMethod, total) {
+    closePaymentForm();
+
+    const isCash = paymentMethod === 'cash';
+    const successHTML = `
+        <div class="payment-success-overlay">
+            <div class="payment-success">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h2>${isCash ? 'Заказ подтвержден!' : 'Оплата прошла успешно!'}</h2>
+                <div class="success-info">
+                    <p><strong>Номер заказа:</strong> #${orderId}</p>
+                    <p><strong>Способ оплаты:</strong> ${isCash ? 'Наличные' : 'Банковская карта'}</p>
+                    ${isCash ?
+            `<p><strong>К оплате:</strong> ${total} руб (наличными курьеру)</p>` :
+            `<p><strong>Оплачено:</strong> ${total} руб</p>`
+        }
+                    <p><strong>Статус:</strong> Заказ подтвержден и готовится</p>
+                    <p><strong>Ожидаемое время доставки:</strong> 50-70 минут</p>
+                    <p class="delivery-note">Курьер позвонит вам за 15 минут до доставки</p>
+                    ${isCash ?
+            '<div class="cash-note"><i class="fas fa-info-circle"></i> Подготовьте точную сумму для удобства расчета</div>' :
+            ''
+        }
+                </div>
+                <button class="btn-primary large" onclick="closePaymentSuccess()">
+                    <i class="fas fa-home"></i> Вернуться на главную
+                </button>
+            </div>
+        </div>
+    `;
+
+    const successContainer = document.createElement('div');
+    successContainer.innerHTML = successHTML;
+    document.body.appendChild(successContainer);
+}
+
+// Закрыть формы
+function closePaymentForm() {
+    const overlay = document.querySelector('.payment-overlay');
+    if (overlay) overlay.remove();
+}
+
+function closePaymentSuccess() {
+    const overlay = document.querySelector('.payment-success-overlay');
+    if (overlay) overlay.remove();
+    document.getElementById('nav-home').click();
+}
+
+// Обнови функцию оформления заказа
+function placeOrder() {
+    placeOrderWithPayment();
+}
 
 // Глобальные функции
 window.editAndAddPizza = editAndAddPizza;

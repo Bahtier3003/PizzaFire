@@ -10,8 +10,8 @@
         public string Size { get; set; } = "medium";
         public decimal ItemPrice { get; set; }
 
-        // Храним как JSON строки вместо сложных связей
-        public string AdditionalIngredientIds { get; set; } = "[]";
-        public string RemovedIngredientIds { get; set; } = "[]";
+        // Исправлено: правильные названия для JSON полей
+        public string AdditionalIngredientsJson { get; set; } = "[]";
+        public string RemovedIngredientsJson { get; set; } = "[]";
     }
 }

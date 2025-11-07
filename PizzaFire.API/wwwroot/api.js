@@ -118,6 +118,24 @@ class PizzaApi {
     async getUserOrders() {
         return await this.request('/Orders/history');
     }
+    // Payment methods
+    async getPaymentMethods() {
+        return await this.request('/Payments/methods');
+    }
+
+    async processPayment(paymentData) {
+        return await this.request('/Payments/process', {
+            method: 'POST',
+            body: JSON.stringify(paymentData)
+        });
+    }
+
+    async confirmCashPayment(orderId) {
+        return await this.request('/Payments/cash-confirm', {
+            method: 'POST',
+            body: JSON.stringify({ orderId })
+        });
+    }
 }
 
 // Создаем глобальный экземпляр API
